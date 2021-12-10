@@ -1,0 +1,26 @@
+#   key
+ sudo /usr/bin/openssl genrsa -out ~/certs/my-registry.key 1024
+Generating RSA private key, 1024 bit long modulus (2 primes)
+................+++++
+........+++++
+e is 65537 (0x010001)
+
+
+#   csr
+udo /usr/bin/openssl req  -new -newkey rsa:4096 -days 365 -addext "subjectAltName=IP:172.17.0.3" -nodes -subj "/C=/ST=/L=/O=/CN=172.17.0.3" -keyout ~/certs/my-registry.key -out ~/certs/my-registry.csr
+Ignoring -days; not generating a certificate
+Generating a RSA private key
+................................++++
+................................++++
+writing new private key to '/home/hasan/certs/my-registry.key'
+-----
+req: No value provided for Subject Attribute C, skipped
+req: No value provided for Subject Attribute ST, skipped
+req: No value provided for Subject Attribute L, skipped
+req: No value provided for Subject Attribute O, skipped
+
+#   crt
+sudo /usr/bin/openssl x509 -req -days 365 -in ~/certs/my-registry.csr -signkey ~/certs/my-registry.key -out ~/certs/my-registry.crt 
+Signature ok
+subject=CN = 172.17.0.3
+Getting Private key
