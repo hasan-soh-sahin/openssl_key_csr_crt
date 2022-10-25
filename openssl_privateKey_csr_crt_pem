@@ -1,0 +1,12 @@
+#generate a private key 
+/usr/bin/openssl genrsa -out ./my-registry.key 1024
+
+#key => csr
+/usr/bin/openssl req  -new -newkey rsa:4096 -addext "subjectAltName=DNS:*.srv.core.abc.bank,DNS:*.apps.srv.core.abc.bank" -nodes -subj "/C=/ST=/L=/O=ABC BANK Corp./CN=srv.core.abc.ban" -keyout ./my-registry.key -out ./my-registry.csr
+
+# key + csr => crt
+/usr/bin/openssl x509 -req -days 365 -in ./my-registry.csr -signkey ./my-registry.key -CAcreateserial -out ./my-registry.crt 
+
+#crt to pem
+openssl x509 -in my-registry.crt -out cert.pem
+
