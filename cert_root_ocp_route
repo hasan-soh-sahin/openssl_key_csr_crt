@@ -1,0 +1,147 @@
+
+1-	 Become a Certificate Authority  myCA.key
+
+a)	Generate private key
+[root@bastion ca]# openssl genrsa -des3 -out myCA.key 2048
+Generating RSA private key, 2048 bit long modulus (2 primes)
+............+++++
+........+++++
+e is 65537 (0x010001)
+Enter pass phrase for myCA.key:
+Verifying - Enter pass phrase for myCA.key:
+[root@bastion ca]# ll
+total 4
+-rw------- 1 root root 1751 Oct 25 15:36 myCA.key
+b) Generate root certificate
+
+[root@bastion ca]# openssl req -x509 -new -nodes -key myCA.key -sha256 -days 825 -out myCA.pem
+Enter pass phrase for myCA.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:TR
+State or Province Name (full name) []:Istanbul
+Locality Name (eg, city) [Default City]:Istanbul
+Organization Name (eg, company) [Default Company Ltd]: A.S.
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:varocpprod.core..b
+Email Address []:b@a.com
+[root@bastion ca]# ll
+total 8
+-rw------- 1 root root 1751 Oct 25 15:36 myCA.key
+-rw-r--r-- 1 root root 1513 Oct 25 15:39 myCA.pem
+
+2-	Create CA-signed certs
+a)	Generate a private key
+[root@bastion ca]# openssl genrsa -out varocpprod.core..b.key 2048
+Generating RSA private key, 2048 bit long modulus (2 primes)
+....+++++
+................................................................................................+++++
+e is 65537 (0x010001)
+[root@bastion ca]# ll
+total 12
+-rw------- 1 root root 1751 Oct 25 15:36 myCA.key
+-rw-r--r-- 1 root root 1513 Oct 25 15:39 myCA.pem
+-rw------- 1 root root 1675 Oct 25 15:40 varocpprod.core..b.key
+
+b)	Create a certificate-signing request
+
+[root@bastion ca]# openssl req -new -key varocpprod.core..b.key -out varocpprod.core..b.csr
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:TR
+State or Province Name (full name) []:Istanbul
+Locality Name (eg, city) [Default City]:Istanbul
+Organization Name (eg, company) [Default Company Ltd]: A.S.
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:varocpprod.core..b
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+[root@bastion ca]# ll
+total 16
+-rw------- 1 root root 1751 Oct 25 15:36 myCA.key
+-rw-r--r-- 1 root root 1513 Oct 25 15:39 myCA.pem
+-rw-r--r-- 1 root root 1033 Oct 25 15:42 varocpprod.core..b.csr
+-rw------- 1 root root 1675 Oct 25 15:40 varocpprod.core..b.key
+
+c)	Create a config file for the extensions
+[root@bastion ca]# >varocpprod.core..b.ext cat <<-EOF
+> authorityKeyIdentifier=keyid,issuer
+> basicConstraints=CA:FALSE
+> keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+> subjectAltName = @alt_names
+> [alt_names]
+> DNS.1 = jupyterhub-proxy.apps.varocpprod.core..b
+> DNS.2 = *.apps.varocpprod.core..b
+> EOF
+[root@bastion ca]# ll
+total 20
+-rw------- 1 root root 1751 Oct 25 15:36 myCA.key
+-rw-r--r-- 1 root root 1513 Oct 25 15:39 myCA.pem
+-rw-r--r-- 1 root root 1033 Oct 25 15:42 varocpprod.core..b.csr
+-rw-r--r-- 1 root root  282 Oct 25 15:48 varocpprod.core..b.ext
+-rw------- 1 root root 1675 Oct 25 15:40 varocpprod.core..b.key
+[root@bastion ca]# more varocpprod.core..b.ext
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = jupyterhub-proxy.apps.varocpprod.core..b
+DNS.2 = *.apps.varocpprod.core..b
+
+d)	 Create the signed certificate
+
+[root@bastion ca]# openssl x509 -req -in varocpprod.core..b.csr -CA myCA.pem -CAkey myCA.key -CAcreateserial \
+> -out varocpprod.core..b.crt -days 825 -sha256 -extfile varocpprod.core..b.ext
+Signature ok
+subject=C = TR, ST = Istanbul, L = Istanbul, O =  A.S., CN = varocpprod.core..b
+Getting CA Private Key
+Enter pass phrase for myCA.key:
+[root@bastion ca]# ls-ltr
+bash: ls-ltr: command not found...
+[root@bastion ca]# ls -ltr
+total 28
+-rw------- 1 root root 1751 Oct 25 15:36 myCA.key
+-rw-r--r-- 1 root root 1513 Oct 25 15:39 myCA.pem
+-rw------- 1 root root 1675 Oct 25 15:40 varocpprod.core..b.key
+-rw-r--r-- 1 root root 1033 Oct 25 15:42 varocpprod.core..b.csr
+-rw-r--r-- 1 root root  282 Oct 25 15:48 varocpprod.core..b.ext
+-rw-r--r-- 1 root root   41 Oct 25 15:50 myCA.srl
+-rw-r--r-- 1 root root 1558 Oct 25 15:50 varocpprod.core..b.crt
+
+[root@bastion ca]# cat varocpprod.core..b.crt
+-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----
+[root@bastion ca]# cat varocpprod.core..b.key
+-----BEGIN RSA PRIVATE KEY-----
+-----END RSA PRIVATE KEY-----
+
+[root@bastion ca]# cat myCA.pem
+-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----
+[root@bastion ca]# pwd
+/root/cert/ca
+[root@bastion ca]# cp myCA.pem /home/kontrol/
+
+OCP Route Tanımı
+
+
+Import myCA.pem as an "Trustet Root Certification Authorities" your Chrome settings (Settings > Manage certificates > Authorities > Import)
+
+https://stackoverflow.com/questions/7580508/getting-chrome-to-accept-self-signed-localhost-certificate
+
+
